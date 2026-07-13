@@ -10,7 +10,6 @@
   :root{
     --felt-1:#1a4a30; --felt-2:#0b2417;
     --brass:#d8b263; --brass-dim:#9a7c3f;
-    --sand:#e8b04b;
     --ink:#f3ead6;
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -18,45 +17,35 @@
   body{
     font-family:Georgia,'Times New Roman',serif;
     color:var(--ink);
-    background:
-      radial-gradient(120% 90% at 50% 20%, var(--felt-1) 0%, var(--felt-2) 78%);
-    overflow:hidden;
-    user-select:none;-webkit-user-select:none;
-    touch-action:manipulation;
+    background:radial-gradient(120% 90% at 50% 20%, var(--felt-1) 0%, var(--felt-2) 78%);
+    overflow:hidden;user-select:none;-webkit-user-select:none;touch-action:manipulation;
   }
-  /* subtle felt weave */
   body::before{content:'';position:fixed;inset:0;pointer-events:none;opacity:.5;
     background-image:
       repeating-linear-gradient(0deg, rgba(255,255,255,.012) 0 1px, transparent 1px 3px),
       repeating-linear-gradient(90deg, rgba(0,0,0,.03) 0 1px, transparent 1px 3px);}
-  #app{
-    height:100svh;display:flex;flex-direction:column;align-items:center;
-    justify-content:space-between;padding:max(10px, env(safe-area-inset-top)) 14px max(12px, env(safe-area-inset-bottom));
-  }
+  #app{height:100svh;display:flex;flex-direction:column;align-items:center;
+    justify-content:space-between;padding:max(10px, env(safe-area-inset-top)) 14px max(12px, env(safe-area-inset-bottom));}
   header{text-align:center;letter-spacing:.42em;font-size:13px;color:var(--brass);
     text-transform:uppercase;padding:6px 0 2px;transition:transform .5s}
   header small{display:block;letter-spacing:.18em;font-size:10px;color:var(--brass-dim);margin-top:4px}
-  #glassWrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;
-    transition:filter .6s}
+  #glassWrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;transition:filter .6s}
   #stage{transition:transform .8s cubic-bezier(.55,-0.15,.35,1.15)}
   #stage.turning{transform:rotate(180deg)}
   canvas{display:block;height:min(64svh,560px);width:auto;max-width:92vw;image-rendering:pixelated}
   body.done #glassWrap{filter:drop-shadow(0 0 26px rgba(232,176,75,.55))}
   #time{font-variant-numeric:tabular-nums;font-size:clamp(30px,7vw,40px);color:var(--brass);
-    letter-spacing:.08em;text-align:center;transition:transform .5s;line-height:1.1;min-height:1.2em}
+    letter-spacing:.08em;text-align:center;transition:transform .5s;line-height:1.1;min-height:1.2em;cursor:pointer}
   body.done #time{animation:pulse 1.1s ease-in-out infinite}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
   .controls{display:flex;gap:10px;justify-content:center;padding:8px 0 2px;transition:transform .5s}
-  button{
-    font:inherit;font-size:14px;letter-spacing:.06em;color:var(--ink);
+  button{font:inherit;font-size:14px;letter-spacing:.06em;color:var(--ink);
     background:linear-gradient(180deg,#3a2a18,#241708);
     border:1px solid var(--brass-dim);border-radius:999px;padding:10px 20px;
-    box-shadow:0 2px 6px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.08);
-    cursor:pointer}
+    box-shadow:0 2px 6px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.08);cursor:pointer}
   button:active{transform:translateY(1px)}
   #hint{font-size:12px;color:rgba(243,234,214,.55);text-align:center;font-style:italic;
-    padding-bottom:2px;transition:transform .5s;max-width:34ch;line-height:1.45}
-  /* readable text when the phone is physically upside down */
+    padding-bottom:2px;transition:transform .5s;max-width:36ch;line-height:1.45}
   body.upside header, body.upside #time, body.upside .controls, body.upside #hint{transform:rotate(180deg)}
   #overlay{position:fixed;inset:0;background:rgba(8,20,13,.86);backdrop-filter:blur(3px);
     display:flex;align-items:center;justify-content:center;z-index:10;cursor:pointer}
@@ -64,9 +53,7 @@
   #overlay .glyph{font-size:64px;line-height:1;filter:drop-shadow(0 4px 14px rgba(232,176,75,.35))}
   #overlay h1{font-size:20px;letter-spacing:.3em;color:var(--brass);margin:18px 0 8px;text-transform:uppercase}
   #overlay p{font-size:13px;color:rgba(243,234,214,.65);font-style:italic}
-  @media (prefers-reduced-motion: reduce){
-    #stage{transition:none} body.done #time{animation:none}
-  }
+  @media (prefers-reduced-motion: reduce){#stage{transition:none} body.done #time{animation:none}}
 </style>
 </head>
 <body>
@@ -77,7 +64,7 @@
   <div class="controls">
     <button id="flipBtn">⟳ &nbsp;Umdrehen</button>
   </div>
-  <div id="hint">Tippe auf die Sanduhr oder drehe das Handy auf den Kopf, um sie zu wenden.</div>
+  <div id="hint">Tippe auf die Sanduhr zum Wenden. Tipp auf die Zeit: Klang testen.</div>
 </div>
 <div id="overlay">
   <div class="inner">
@@ -89,10 +76,12 @@
 
 <script>
 'use strict';
-/* ---------- simulation constants (verified: ~121 s run, no neck clog) ---------- */
+/* v2 — continuous-angle gravity, verified headless:
+   vertical 120.4 s · 25° tilt 120.9 s · horizontal pauses · mid-flip reverses */
 const GW=84, GH=132, CELL=4, yTop=10, yBot=121, MIDB=66, MAXHW=33, NECKHW=1.6,
-      FILL=0.70, DURATION=120, SPS=120;               // 120 physics substeps / second
+      FILL=0.70, DURATION=120, SPS=120;
 const cx=(GW-1)/2;
+const D=[[0,1],[1,1],[1,0],[1,-1],[0,-1],[-1,-1],[-1,0],[-1,1]]; // 8 gravity dirs, 0 = down
 
 function hwAt(y){
   const t=Math.min(1, Math.abs(y-65.5)/(65.5-yTop));
@@ -113,62 +102,84 @@ let totalGrains=0, countTop=0, countBot=0;
 const ratePerSec=totalGrains/DURATION, ratePerStep=ratePerSec/SPS;
 
 /* ---------- state ---------- */
-let acc=0, gravityDown=true, tilt=0, scanLR=true,
-    settle=0, armed=true, running=false, turning=false, sensorActive=false,
+let acc=0, gAngle=0,           // gravity angle: 0 = canvas-down, follows the phone continuously
+    gravityDown=true,          // coarse up/down (timer, chime arming, upside-text)
+    scanLR=true, settle=0, armed=true, running=false, turning=false, sensorActive=false,
     gyF=1, gxF=0;
 
-function crossesMid(y,ny){return (y<MIDB)!==(ny<MIDB);}
-function isEmpty(x,y){const i=y*GW+x;return mask[i]===1&&sand[i]===0;}
-
+function isEmpty(x,y){
+  if(x<0||x>=GW||y<yTop||y>yBot)return false;
+  const i=y*GW+x;return mask[i]===1&&sand[i]===0;
+}
+function tryMove(i,y,nx,ny,v){
+  if(!isEmpty(nx,ny))return false;
+  const cr=(y<MIDB)!==(ny<MIDB);
+  if(cr&&acc<1)return false;          // neck throttle -> full pass ≈ 2 min
+  if(cr){acc-=1;if(ny>=MIDB){countTop--;countBot++;}else{countBot--;countTop++;}}
+  sand[ny*GW+nx]=v;sand[i]=0;return true;
+}
 function step(){
   acc=Math.min(acc+ratePerStep,4);
-  const dir=gravityDown?1:-1;
   let moved=0;
-  const y0=dir===1?yBot:yTop, y1=dir===1?yTop:yBot;
-  for(let y=y0;dir===1?y>=y1:y<=y1;y-=dir){
-    const row=y*GW;
-    for(let k=0;k<GW;k++){
-      const x=scanLR?k:GW-1-k, i=row+x, v=sand[i];
+  const f=((gAngle/(Math.PI/4))%8+8)%8, i0=Math.floor(f), fr=f-i0;
+  const gx=Math.sin(gAngle), gy=Math.cos(gAngle);
+  const domY=Math.abs(gy)>=Math.abs(gx);
+  const oStart=domY?(gy>0?yBot:yTop):(gx>0?GW-1:0);
+  const oEnd=domY?(gy>0?yTop:yBot):(gx>0?0:GW-1);
+  const oStep=oStart>oEnd?-1:1;
+  const innerN=domY?GW:(yBot-yTop+1);
+  for(let oo=oStart;;oo+=oStep){
+    for(let kk=0;kk<innerN;kk++){
+      const inner=scanLR?kk:innerN-1-kk;
+      const x=domY?inner:oo, y=domY?oo:yTop+inner;
+      const i=y*GW+x, v=sand[i];
       if(!v)continue;
-      const ny=y+dir; if(ny<yTop||ny>yBot)continue;
-      const pref=Math.random()<0.5+tilt*0.4?1:-1;
+      // grain-wise blend between the two nearest of 8 directions -> smooth angles
+      const k=(Math.random()<fr?i0+1:i0)&7;
+      const d0=D[k], s=Math.random()<0.5?1:-1;
       let did=false;
-      // fall straight, then diagonals
-      for(const nx of [x, x+pref, x-pref]){
-        if(nx<0||nx>=GW||!isEmpty(nx,ny))continue;
-        const cr=crossesMid(y,ny);
-        if(cr&&acc<1)continue;         // throttle at the neck -> total ≈ 2 min
-        if(cr){acc-=1; if(dir===1){countTop--;countBot++;}else{countBot--;countTop++;}}
-        sand[ny*GW+nx]=v;sand[i]=0;moved++;did=true;break;
+      for(const d of [d0,D[(k+s)&7],D[(k-s+8)&7]]){
+        if(tryMove(i,y,x+d[0],y+d[1],v)){did=true;moved++;break;}
       }
-      // lateral relaxation -> flatter, natural sand piles
-      if(!did&&Math.random()<0.3){
-        for(const s of (pref===1?[1,-1]:[-1,1])){
-          const nx=x+s;
-          if(nx<0||nx>=GW||nx+s<0||nx+s>=GW)continue;
-          if(isEmpty(nx,y)&&isEmpty(nx+s,ny)){sand[row+nx]=v;sand[i]=0;moved++;break;}
+      if(!did&&Math.random()<0.3){       // lateral relaxation -> natural piles
+        for(const q of (s===1?[2,6]:[6,2])){
+          const p=D[(k+q)&7], nx=x+p[0], ny=y+p[1];
+          if(isEmpty(nx,ny)&&isEmpty(nx+d0[0],ny+d0[1])&&tryMove(i,y,nx,ny,v)){moved++;break;}
         }
       }
     }
+    if(oo===oEnd)break;
   }
   scanLR=!scanLR;
   if(moved===0)settle++;else settle=0;
 }
 
-/* ---------- audio: synthesized bell chime ---------- */
+/* ---------- audio: synthesized bell, hardened for iOS ---------- */
 let actx=null, master=null;
 function initAudio(){
   try{
+    // iOS 17+: play through even when the silent switch is on
+    if('audioSession' in navigator){try{navigator.audioSession.type='playback';}catch(e){}}
     actx=new (window.AudioContext||window.webkitAudioContext)();
     master=actx.createGain();master.gain.value=0.6;master.connect(actx.destination);
-    if(actx.state==='suspended')actx.resume();
+    // unlock with an inaudible blip inside the user gesture
+    const b=actx.createBuffer(1,1,22050),s=actx.createBufferSource();
+    s.buffer=b;s.connect(actx.destination);s.start(0);
+    if(actx.state!=='running')actx.resume();
   }catch(e){}
 }
-function bell(freq,t,dur,gain){
+async function ensureAudio(){
+  if(!actx){initAudio();return;}
+  if(actx.state!=='running'){try{await actx.resume();}catch(e){}}
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible')ensureAudio();
+});
+function bellTone(freq,t,dur,gain){
   const o=actx.createOscillator(),o2=actx.createOscillator(),
         g=actx.createGain(),g2=actx.createGain();
   o.type='sine';o.frequency.value=freq;
-  o2.type='sine';o2.frequency.value=freq*2.76;      // inharmonic partial = bell timbre
+  o2.type='sine';o2.frequency.value=freq*2.76;       // inharmonic partial = bell timbre
   g.gain.setValueAtTime(gain,t);
   g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
   g2.gain.setValueAtTime(gain*0.22,t);
@@ -176,13 +187,13 @@ function bell(freq,t,dur,gain){
   o.connect(g).connect(master);o2.connect(g2).connect(master);
   o.start(t);o.stop(t+dur);o2.start(t);o2.stop(t+dur*0.5);
 }
-function chime(){
-  if(!actx)return;
-  if(actx.state==='suspended')actx.resume();
+async function chime(){
+  await ensureAudio();
+  if(!actx||actx.state!=='running')return;
   const t0=actx.currentTime+0.03;
-  bell(440,t0,2.6,0.20);
-  [880,1108.7,1318.5].forEach((f,i)=>bell(f,t0+i*0.17,2.0,0.24));
-  [880,1318.5].forEach((f,i)=>bell(f,t0+1.15+i*0.17,2.2,0.18)); // gentle echo
+  bellTone(440,t0,2.6,0.20);
+  [880,1108.7,1318.5].forEach((f,i)=>bellTone(f,t0+i*0.17,2.0,0.24));
+  [880,1318.5].forEach((f,i)=>bellTone(f,t0+1.15+i*0.17,2.2,0.18));
 }
 
 /* ---------- rendering ---------- */
@@ -219,7 +230,6 @@ function drawFrame(){
     ctx.beginPath();ctx.roundRect(capX+2,y0+2,capW-4,capH-4,5);ctx.stroke();
   };
   cap(3); cap(GH*CELL-capH-3);
-  // side pillars
   const pW=9, pT=3+capH-2, pB=GH*CELL-capH-3+2;
   for(const pX of [capX+5, capX+capW-5-pW]){
     const g=ctx.createLinearGradient(pX,0,pX+pW,0);
@@ -231,14 +241,12 @@ function drawFrame(){
 
 function render(){
   ctx.clearRect(0,0,GW*CELL,GH*CELL);
-  // glass interior
   const gi=ctx.createLinearGradient(0,yTop*CELL,0,yBot*CELL);
   gi.addColorStop(0,'rgba(180,220,235,.10)');
   gi.addColorStop(.5,'rgba(10,26,20,.55)');
   gi.addColorStop(1,'rgba(180,220,235,.08)');
   ctx.fillStyle='rgba(8,20,15,.5)';ctx.fill(glassPath);
   ctx.fillStyle=gi;ctx.fill(glassPath);
-  // sand (pixel layer)
   for(let i=0,j=0;i<sand.length;i++,j+=4){
     const v=sand[i];
     if(v){const c=PAL[v];px[j]=c[0];px[j+1]=c[1];px[j+2]=c[2];px[j+3]=255;}
@@ -247,7 +255,6 @@ function render(){
   octx.putImageData(img,0,0);
   ctx.imageSmoothingEnabled=false;
   ctx.drawImage(off,0,0,GW,GH,0,0,GW*CELL,GH*CELL);
-  // glass outline + sheen
   ctx.strokeStyle='rgba(230,245,255,.4)';ctx.lineWidth=1.6;ctx.stroke(glassPath);
   ctx.strokeStyle='rgba(255,255,255,.18)';ctx.lineWidth=3;
   ctx.beginPath();
@@ -282,6 +289,7 @@ function updateTimer(){
   const txt=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
   if(txt!==lastShown){timeEl.textContent=txt;lastShown=txt;}
 }
+timeEl.addEventListener('click',()=>{chime();});   // Klang testen
 
 /* ---------- flipping ---------- */
 const stage=document.getElementById('stage');
@@ -290,10 +298,12 @@ function manualFlip(){
   turning=true;
   stage.classList.add('turning');
   setTimeout(()=>{
-    gravityDown=!gravityDown;settle=0;
+    gravityDown=!gravityDown;
+    gAngle=gravityDown?0:Math.PI;
+    settle=0;
     stage.style.transition='none';
     stage.classList.remove('turning');
-    void stage.offsetWidth;              // reflow, then restore transition
+    void stage.offsetWidth;
     stage.style.transition='';
     turning=false;
   },820);
@@ -301,20 +311,20 @@ function manualFlip(){
 document.getElementById('flipBtn').addEventListener('click',manualFlip);
 cvs.addEventListener('click',manualFlip);
 
-/* ---------- device orientation: gravity follows the phone ---------- */
+/* ---------- device orientation: gravity follows the phone at any angle ---------- */
 function onOrient(e){
   if(e.beta==null)return;
   if(!sensorActive){
     sensorActive=true;
     document.getElementById('flipBtn').style.display='none';
-    document.getElementById('hint').textContent='Handy auf den Kopf drehen = Sanduhr wenden.';
+    document.getElementById('hint').textContent='Handy neigen oder drehen — der Sand folgt. Tipp auf die Zeit: Klang testen.';
   }
   const b=e.beta*Math.PI/180, g=e.gamma*Math.PI/180;
   const gy=Math.sin(b), gx=Math.sin(g)*Math.cos(b);   // gravity in screen coords
-  gyF+=(gy-gyF)*0.15; gxF+=(gx-gxF)*0.15;
-  if(gravityDown&&gyF<-0.35){gravityDown=false;settle=0;document.body.classList.add('upside');}
-  else if(!gravityDown&&gyF>0.35){gravityDown=true;settle=0;document.body.classList.remove('upside');}
-  tilt=Math.max(-1,Math.min(1,gxF*2.2));              // side-tilt makes the sand lean
+  gyF+=(gy-gyF)*0.2; gxF+=(gx-gxF)*0.2;
+  if(Math.hypot(gxF,gyF)>0.25) gAngle=Math.atan2(gxF,gyF);  // keep last angle if phone is flat
+  if(gravityDown&&gyF<-0.3){gravityDown=false;settle=0;document.body.classList.add('upside');}
+  else if(!gravityDown&&gyF>0.3){gravityDown=true;settle=0;document.body.classList.remove('upside');}
 }
 
 /* ---------- main loop (fixed timestep, frame-rate independent) ---------- */
